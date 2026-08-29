@@ -15,30 +15,101 @@ interface VideoWithInstructionsProps {
 }
 
 /**
- * Pick the best available French voice from the browser's voice list.
- * Falls back to any voice whose lang starts with 'fr'.
- * Returns null if no French voice is available.
+ * Pick the best available French voice for the current browser.
+ *
+ * Browser-specific strategies:
+ *
+ * - Safari iOS / macOS: prefers "Amelie" (premium Apple French voice,
+ *   very natural). Falls back to "Thomas" (male) or any fr-FR voice.
+ *   iOS exposes these only after the first user interaction, so we
+ *   also try to load voices on-demand via getVoices().
+ *
+ * - Chrome desktop: prefers Microsoft "Hortense" or "Paul" (best
+ *   French quality on Chrome OS/Windows). Falls back to Google
+ *   Français only if no Microsoft voice is available (Google's voice
+ *   on Chrome desktop has a robotic accent on numbers).
+ *
+ * - Firefox: uses OS voices — falls through to the generic fr-FR
+ *   picker, which works well on Linux/Mac but may be empty on
+ *   Windows without a language pack installed.
+ *
+ * - Edge: same as Chrome — Microsoft voices are preferred.
+ *
+ * Returns null if no French voice is available. The caller then lets
+ * the browser pick a default voice with lang='fr-FR', which still
+ * works acceptably on most systems.
  */
 function pickFrenchVoice(): SpeechSynthesisVoice | null {
   if (!('speechSynthesis' in window)) return null
   const voices = window.speechSynthesis.getVoices()
   if (voices.length === 0) return null
 
-  // Priority order:
-  // 1. fr-FR voices from major vendors (Google, Microsoft, Amazon)
-  // 2. Any fr-FR voice
-  // 3. Any voice whose lang starts with 'fr' (fr-CA, fr-BE, etc.)
-  const priority = [
-    (v: SpeechSynthesisVoice) => v.lang === 'fr-FR' && /google/i.test(v.name),
-    (v: SpeechSynthesisVoice) => v.lang === 'fr-FR' && /microsoft|amazon|natural/i.test(v.name),
-    (v: SpeechSynthesisVoice) => v.lang === 'fr-FR',
-    (v: SpeechSynthesisVoice) => v.lang.startsWith('fr'),
-  ]
-  for (const predicate of priority) {
-    const match = voices.find(predicate)
-    if (match) return match
+  // Detect browser for tailored voice selection
+  const ua = navigator.userAgent
+  const isSafari = /safari/i.test(ua) && !/chrome/i.test(ua) ||
+    (/iphone|ipad|ipod/i.test(ua) && !/crios/i.test(ua))
+  const isChrome = /chrome/i.test(ua) && !/edg/i.test(ua) && !/opr/i.test(ua)
+  const isEdge = /edg/i.test(ua)
+
+  // Priority order per browser
+  let priorities: ((v: SpeechSynthesisVoice) => boolean)[]
+
+  if (isSafari) {
+    // Apple ecosystem — Amelie (female) and Thomas (male) are the best
+    priorities = [
+      (v) => v.lang === 'fr-FR' && /amelie/i.test(v.name),
+      (v) => v.lang.startsWith('fr') && /amelie/i.test(v.name),
+      (v) => v.lang === 'fr-FR' && /thomas|julie|virginie/i.test(v.name),
+      (v) => v.lang === 'fr-FR' && !/compact/i.test(v.name), // prefer enhanced over compact
+      (v) => v.lang === 'fr-FR',
+      (v) => v.lang.startsWith('fr'),
+    ]
+  } else if (isChrome || isEdge) {
+    // Chromium-based — Microsoft voices are the best quality
+    // (Google's fr-FR voice on Chrome desktop mispronounces numbers)
+    priorities = [
+      (v) => v.lang === 'fr-FR' && /hortense|paul|julia|remy/i.test(v.name),
+      (v) => v.lang === 'fr-FR' && /microsoft/i.test(v.name) && !/compact/i.test(v.name),
+      (v) => v.lang === 'fr-FR' && /microsoft/i.test(v.name),
+      (v) => v.lang === 'fr-FR' && /amazon/i.test(v.name),
+      (v) => v.lang === 'fr-FR' && /google/i.test(v.name), // last resort on Chrome
+      (v) => v.lang === 'fr-FR',
+      (v) => v.lang.startsWith('fr'),
+    ]
+  } else {
+    // Firefox + others — generic picker
+    priorities = [
+      (v) => v.lang === 'fr-FR' && /google|microsoft|amazon|natural/i.test(v.name),
+      (v) => v.lang === 'fr-FR',
+      (v) => v.lang.startsWith('fr'),
+    ]
   }
+
+  for (const predicate of priorities) {
+    const match = voices.find(predicate)
+    if (match) {
+      console.log(`[voice] selected: "${match.name}" (${match.lang})`)
+      return match
+    }
+  }
+  console.warn('[voice] no French voice found, falling back to default')
   return null
+}
+
+/**
+ * Trigger voice loading on Safari iOS — voices are only exposed after
+ * a user interaction. Calling getVoices() also kicks off the async
+ * load on Chrome.
+ */
+function primeVoices(): void {
+  if (!('speechSynthesis' in window)) return
+  // Trigger a no-op speak + cancel — this forces iOS to expose voices
+  const u = new SpeechSynthesisUtterance('')
+  u.volume = 0
+  window.speechSynthesis.speak(u)
+  window.speechSynthesis.cancel()
+  // Also call getVoices() to trigger the load
+  window.speechSynthesis.getVoices()
 }
 
 /**
@@ -121,21 +192,32 @@ export function VideoWithInstructions({
   const [showInstructions, setShowInstructions] = useState(false)
   const [voiceOn, setVoiceOn] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
-  const [voiceReady, setVoiceReady] = useState(false)
 
-  // Wait for voices to be loaded (Chrome loads them async)
+  // Wait for voices to be loaded (Chrome loads them async, iOS needs
+  // a user interaction to expose them). We call primeVoices() to
+  // kick off the load.
   useEffect(() => {
     if (!('speechSynthesis' in window)) return
+    primeVoices()
     const checkVoices = () => {
       const voices = window.speechSynthesis.getVoices()
       if (voices.length > 0) {
-        setVoiceReady(true)
+        // Log available French voices for debugging
+        const frVoices = voices.filter((v) => v.lang.startsWith('fr'))
+        if (frVoices.length > 0) {
+          console.log('[voice] Available French voices:', frVoices.map((v) => `${v.name} (${v.lang})`).join(', '))
+        } else {
+          console.warn('[voice] No French voices installed on this system')
+        }
       }
     }
     checkVoices()
     window.speechSynthesis.onvoiceschanged = checkVoices
+    // iOS sometimes needs a small delay before voices appear
+    const timer = setTimeout(checkVoices, 500)
     return () => {
       window.speechSynthesis.onvoiceschanged = null
+      clearTimeout(timer)
     }
   }, [])
 
@@ -222,14 +304,20 @@ export function VideoWithInstructions({
       // Turning off — stop any in-progress speech
       if ('speechSynthesis' in window) window.speechSynthesis.cancel()
       setVoiceOn(false)
-    } else {
-      // Check availability first
-      if (!('speechSynthesis' in window) || !voiceReady) {
-        // Fallback: try anyway, browser will use default voice
-        setVoiceReady(true)
-      }
-      setVoiceOn(true)
+      return
     }
+    // Turning on — prime voices first (iOS Safari needs this)
+    if ('speechSynthesis' in window) {
+      primeVoices()
+      // If voices aren't loaded yet, give the browser a tick to load them
+      const voices = window.speechSynthesis.getVoices()
+      if (voices.length === 0) {
+        // Retry after 200ms — the primeVoices() call should trigger the load
+        setTimeout(() => setVoiceOn(true), 200)
+        return
+      }
+    }
+    setVoiceOn(true)
   }
 
   return (
