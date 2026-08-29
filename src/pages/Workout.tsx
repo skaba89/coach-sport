@@ -6,7 +6,9 @@ import { getExerciseById } from '../data/exercises'
 import { getProgramById } from '../data/programs'
 import { getDataStore } from '../lib/useDataStore'
 import { CountdownTimer } from '../components/CountdownTimer'
+import { VideoWithInstructions } from '../components/VideoWithInstructions'
 import { hasExerciseAnimation } from '../lib/hasAnimation'
+import { getExerciseVideo } from '../data/videos'
 import type { Rpe } from '../lib/types'
 import { rpeLabel } from '../lib/labels'
 import { withToast } from '../lib/toast'
@@ -207,6 +209,10 @@ function ExerciseWorkoutCard({
   targetReps?: string
   children: ReactNode
 }) {
+  const exercise = getExerciseById(exerciseId)
+  const video = getExerciseVideo(exerciseId)
+  const hasSvg = hasExerciseAnimation(exerciseId)
+
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-800/40 p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -221,7 +227,17 @@ function ExerciseWorkoutCard({
         {targetReps && <span className="shrink-0 text-xs text-slate-500">Objectif : {targetReps}</span>}
       </div>
 
-      {hasExerciseAnimation(exerciseId) && (
+      {/* Video with overlay instructions + voice-over — preferred when available */}
+      {video && exercise ? (
+        <div className="mb-3">
+          <VideoWithInstructions
+            video={video}
+            exercise={exercise}
+            targetReps={targetReps}
+            showChairBadge={isChair}
+          />
+        </div>
+      ) : hasSvg ? (
         <div className="mb-3">
           <Suspense fallback={<div className="aspect-[200/190] w-40 animate-pulse rounded-xl bg-slate-800/60" />}>
             <LazyExerciseAnimation
@@ -231,7 +247,7 @@ function ExerciseWorkoutCard({
             />
           </Suspense>
         </div>
-      )}
+      ) : null}
 
       <div className="flex flex-col gap-2">{children}</div>
     </div>
