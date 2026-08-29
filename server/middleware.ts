@@ -26,7 +26,12 @@ import type { ApiError, AuthSession, LoginRequest, RegisterRequest } from '../sr
 
 const JSON_HEADER = { 'Content-Type': 'application/json' }
 
-async function readBody(req: IncomingMessage): Promise<string> {
+async function readBody(req: IncomingMessage & { body?: string }): Promise<string> {
+  // Netlify Functions / Express provide req.body already parsed as a string.
+  // Vite dev middleware gives us a real IncomingMessage stream.
+  if (typeof req.body === 'string' && req.body.length > 0) {
+    return req.body
+  }
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
     req.on('data', (chunk: Buffer) => {

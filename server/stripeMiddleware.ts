@@ -40,7 +40,10 @@ function sql() {
   return _sql
 }
 
-async function readBody(req: IncomingMessage): Promise<string> {
+async function readBody(req: IncomingMessage & { body?: string }): Promise<string> {
+  if (typeof req.body === 'string' && req.body.length > 0) {
+    return req.body
+  }
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
     req.on('data', (chunk: Buffer) => {
