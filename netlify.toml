@@ -1,0 +1,47 @@
+# Netlify configuration
+#
+# Deploys a static SPA (built with Vite) with SPA-style fallback routing.
+#
+# Note: the backend (auth + data + stripe) is implemented as Vite middleware
+# in dev. For production on Netlify, use Netlify Functions (serverless) by
+# porting the handlers from server/middleware.ts, server/dataMiddleware.ts,
+# and server/stripeMiddleware.ts to /api/* functions under /netlify/functions/.
+# See DEPLOY.md for details.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+  # Required so Netlify uses the right Node version
+  [build.environment]
+    NODE_VERSION = "20"
+    NPM_FLAGS = "--legacy-peer-deps"
+
+# SPA fallback: serve index.html for any path that doesn't match a static asset
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+  # Don't redirect API paths — they go to Netlify Functions
+  conditions = {Path = ["!/api/*"]}
+
+# Cache static assets aggressively (they have hashed filenames)
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Don't cache the HTML (always fetch latest)
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-surface-hover: #273549;
+  --color-accent: #10b981;
+  --color-accent-hover: #059669;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Offline exercise animations: static-hold "breathing" pulse (the looping
+   poses themselves are driven by JS state in ExerciseAnimation.tsx, not
+   CSS keyframes, so exactly one pose is ever visible at a time). */
+@keyframes exanim-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}

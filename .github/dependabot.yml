@@ -1,0 +1,54 @@
+version: 2
+updates:
+  # npm dependencies (frontend)
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 5
+    labels:
+      - 'dependencies'
+      - 'npm'
+    # Auto-merge patch updates (semver-safe) — they shouldn't break anything
+    # thanks to the CI lint+test+build gate. Minor/major still need a human review.
+    auto-merge-allowed: true
+    allow:
+      - dependency-type: 'direct'
+      - dependency-type: 'indirect'
+    commit-message:
+      prefix: 'deps'
+      include: 'scope'
+    groups:
+      # Group React-related updates together — they often need coordinated bumps
+      react:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - 'react-router-dom'
+          - '@types/react'
+          - '@types/react-dom'
+      # Group Vite + plugins together
+      vite:
+        patterns:
+          - 'vite'
+          - '@vitejs/plugin-react'
+          - 'vite-plugin-pwa'
+      # Group TypeScript + lint together
+      typescript:
+        patterns:
+          - 'typescript'
+          - '@types/node'
+          - 'oxlint'
+
+  # GitHub Actions
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
+    labels:
+      - 'dependencies'
+      - 'github-actions'
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'
