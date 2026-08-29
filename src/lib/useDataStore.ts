@@ -49,9 +49,11 @@ export function useSessions(): UseSessionsResult {
     setError(null)
     try {
       const sessions = await getDataStore().sessions.list()
+      // Defensive: API might return a non-array (error object, null, etc.)
+      const safeSessions = Array.isArray(sessions) ? sessions : []
       // Skip the update if a newer refresh was triggered
       if (refreshIdRef.current === myRefreshId) {
-        setRemoteSessions(sessions)
+        setRemoteSessions(safeSessions)
       }
     } catch (err) {
       if (refreshIdRef.current === myRefreshId) {
@@ -168,8 +170,11 @@ export function useFavorites(type: FavoriteRecord['type']): UseFavoritesResult {
     setError(null)
     try {
       const list = await getDataStore().favorites.listByType(type)
+      // Defensive: API might return a non-array (error object, null, etc.)
+      // if the request fails. Coerce to empty array to prevent .map crashes.
+      const safeList = Array.isArray(list) ? list : []
       if (refreshIdRef.current === myRefreshId) {
-        setRemoteFavorites(list)
+        setRemoteFavorites(safeList)
       }
     } catch (err) {
       if (refreshIdRef.current === myRefreshId) {

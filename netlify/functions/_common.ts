@@ -10,10 +10,24 @@ import type { Handler, HandlerEvent, HandlerContext } from '@netlify/functions'
 import { runChain, type NodeReq, type NodeRes } from './_router'
 
 export const handler: Handler = async (event: HandlerEvent, _context: HandlerContext) => {
+  // Build the query string from all possible Netlify event properties.
+  // Different versions of @netlify/functions expose different fields:
+  //   - event.rawQueryString  (newer, preferred)
+  //   - event.rawQuery       (older alias)
+  //   - event.queryStringParameters  (parsed object, always available)
+  let queryString = event.rawQueryString ?? (event as { rawQuery?: string }).rawQuery ?? ''
+  if (!queryString && event.queryStringParameters) {
+    const params = new URLSearchParams()
+    for (const [k, v] of Object.entries(event.queryStringParameters)) {
+      if (v !== undefined && v !== null) params.set(k, v)
+    }
+    queryString = params.toString()
+  }
+
   // Build the Node-style req object from the Netlify event
   const req: NodeReq = {
     method: event.httpMethod,
-    url: event.path + (event.rawQueryString ? `?${event.rawQueryString}` : ''),
+    url: event.path + (queryString ? `?${queryString}` : ''),
     headers: Object.fromEntries(
       Object.entries(event.headers).map(([k, v]) => [k.toLowerCase(), Array.isArray(v) ? v.join(',') : v]),
     ),
