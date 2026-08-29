@@ -4,7 +4,7 @@ import { ChevronLeft, AlertTriangle, Star, Video as VideoIcon, Sparkles } from '
 import { getExerciseById } from '../data/exercises'
 import { hasExerciseAnimation } from '../lib/hasAnimation'
 import { getExerciseVideo } from '../data/videos'
-import { VideoPlayer } from '../components/VideoPlayer'
+import { VideoWithInstructions } from '../components/VideoWithInstructions'
 import { equipmentBadge, exerciseEquipmentSafetyNote } from '../lib/equipment'
 import { groupLabel, difficultyLabel } from '../lib/labels'
 import { withToast } from '../lib/toast'
@@ -169,9 +169,11 @@ interface DemonstrationProps {
 function Demonstration({ exerciseId, equipment }: DemonstrationProps) {
   const video = getExerciseVideo(exerciseId)
   const hasSvg = hasExerciseAnimation(exerciseId)
+  const exercise = getExerciseById(exerciseId)
   const [forceSvg, setForceSvg] = useState(false)
 
   if (!video && !hasSvg) return null
+  if (!exercise) return null
 
   return (
     <div className="mt-4">
@@ -195,7 +197,11 @@ function Demonstration({ exerciseId, equipment }: DemonstrationProps) {
       </div>
 
       {video && !forceSvg ? (
-        <VideoPlayer video={video} label={equipment === 'chair' ? '🪑 Chaise' : undefined} />
+        <VideoWithInstructions
+          video={video}
+          exercise={exercise}
+          showChairBadge={equipment === 'chair'}
+        />
       ) : (
         <Suspense fallback={<div className="aspect-video animate-pulse rounded-xl bg-slate-800/60" />}>
           <LazyExerciseAnimation
