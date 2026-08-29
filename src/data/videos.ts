@@ -89,6 +89,26 @@ export const VIDEO_LIBRARY: ExerciseVideo[] = [
   V('childs-pose',          'childs-pose',       '6932946',  14),
   V('hip-flexor-stretch',   'hip-flexor-stretch','7226846',  16),
   V('cat-cow-stretch',      'cat-cow',           '8232563',  18),
+
+  // ── Back pain relief & sciatica (11 clips) ────────────────────────
+  V('knee-to-chest-stretch','knee-to-chest',     '8401260',  12, ['both-knees-to-chest']),
+  V('knees-rocks-side-to-side', 'knees-rocks',    '8691033',  14),
+  V('pelvic-tilt-exercise', 'pelvic-tilt',       '7155311',  14, ['bridging-exercise']),
+  V('seated-spinal-twist',  'spinal-twist',      '6298129',  15),
+  V('cobra-stretch-gentle', 'cobra-pose',        '6955406',  14, ['cobra-stretch']),
+  V('child-pose-relax',     'childs-pose',       '6932946',  14),
+  V('lower-back-stretch-prone', 'lower-back-stretch', '8638175', 14),
+  V('piriformis-stretch-seated', 'piriformis-stretch', '6077273', 14, ['piriformis-stretch-supine', 'figure-4-stretch-supine', 'piriformis-stretch', 'figure-4-stretch']),
+  V('sciatic-nerve-glide',  'piriformis-stretch','6077273',  14),
+
+  // ── Hip mobility (8 clips → 10 exercises) ─────────────────────────
+  V('hip-flexor-stretch-kneeling', 'kneeling-hip-flexor', '3195218', 14, ['hip-flexor-stretch-standing']),
+  V('butterfly-stretch',    'glute-stretch',     '6525487',  14, ['frog-stretch', 'happy-baby-pose']),
+  V('hip-circles',          'piriformis',        '6111108',  12, ['kneeling-hip-rotation', 'lunge-hip-opener']),
+  V('hamstring-stretch-supine', 'hamstring-stretch', '6023267', 14, ['hamstring-stretch-doorway']),
+  V('standing-side-bend',   'lower-back-stretch','8638175', 14),
+  V('spinal-twist-supine',  'spinal-twist',      '6298129',  15),
+  V('cat-cow-stretch-v2',   'cat-cow',           '8232563',  18),
 ]
 
 /** Index for O(1) lookup by exercise id. */
