@@ -15,14 +15,97 @@ interface VideoWithInstructionsProps {
 }
 
 /**
+ * Pick the best available French voice from the browser's voice list.
+ * Falls back to any voice whose lang starts with 'fr'.
+ * Returns null if no French voice is available.
+ */
+function pickFrenchVoice(): SpeechSynthesisVoice | null {
+  if (!('speechSynthesis' in window)) return null
+  const voices = window.speechSynthesis.getVoices()
+  if (voices.length === 0) return null
+
+  // Priority order:
+  // 1. fr-FR voices from major vendors (Google, Microsoft, Amazon)
+  // 2. Any fr-FR voice
+  // 3. Any voice whose lang starts with 'fr' (fr-CA, fr-BE, etc.)
+  const priority = [
+    (v: SpeechSynthesisVoice) => v.lang === 'fr-FR' && /google/i.test(v.name),
+    (v: SpeechSynthesisVoice) => v.lang === 'fr-FR' && /microsoft|amazon|natural/i.test(v.name),
+    (v: SpeechSynthesisVoice) => v.lang === 'fr-FR',
+    (v: SpeechSynthesisVoice) => v.lang.startsWith('fr'),
+  ]
+  for (const predicate of priority) {
+    const match = voices.find(predicate)
+    if (match) return match
+  }
+  return null
+}
+
+/**
+ * Format the instructions into a natural, well-paced French script.
+ *
+ * The original instructions are imperative ("Descendre, pousser...").
+ * For spoken output we wrap them in conversational connectors so the
+ * TTS engine reads them naturally:
+ *   - Greeting + exercise name
+ *   - Numbered steps with "Étape N : ..."
+ *   - Target reps reformatted (3-6 → "entre 3 et 6")
+ *   - Encouragement at the end
+ */
+function buildSpokenScript(exercise: Exercise, targetReps?: string): string {
+  const name = exercise.name
+  const steps = exercise.instructions
+
+  // Reformulate target reps for natural speech
+  // Examples:
+  //   "3-6 / bras" → "entre 3 et 6 répétitions par bras"
+  //   "12-15"     → "entre 12 et 15 répétitions"
+  //   "20-30s"    → "20 à 30 secondes"
+  //   "AMRAP"     → "le maximum de répétitions"
+  let spokenTarget = ''
+  if (targetReps) {
+    const rangeMatch = targetReps.match(/^(\d+)\s*-\s*(\d+)\s*(\/\s*\w+)?$/)
+    const timeMatch = targetReps.match(/^(\d+)\s*-\s*(\d+)\s*s$/i)
+    if (timeMatch) {
+      spokenTarget = `Maintiens la position pendant ${timeMatch[1]} à ${timeMatch[2]} secondes.`
+    } else if (rangeMatch) {
+      const [, low, high, suffix] = rangeMatch
+      const perPart = suffix ? ` par ${suffix.replace('/', '').trim()}` : ''
+      spokenTarget = `L'objectif est de faire entre ${low} et ${high} répétitions${perPart}.`
+    } else if (targetReps.toUpperCase() === 'AMRAP') {
+      spokenTarget = "L'objectif est de faire le maximum de répétitions possible."
+    } else {
+      spokenTarget = `L'objectif est ${targetReps} répétitions.`
+    }
+  }
+
+  // Build the script
+  const parts: string[] = []
+  parts.push(`Voici l'exercice : ${name}.`)
+  if (exercise.description) {
+    // Brief description, shortened for speech
+    const shortDesc = exercise.description.length > 100
+      ? exercise.description.slice(0, 100).trim() + '...'
+      : exercise.description
+    parts.push(shortDesc)
+  }
+  parts.push("Je vais t'expliquer comment le faire, étape par étape.")
+  steps.forEach((step, i) => {
+    parts.push(`Étape ${i + 1}. ${step}`)
+  })
+  if (spokenTarget) {
+    parts.push(spokenTarget)
+  }
+  parts.push("N'oublie pas de bien respirer, et garde le contrôle du mouvement. C'est parti !")
+  return parts.join(' ')
+}
+
+/**
  * Video player with:
  * 1. Real CC0 video clip (autoplays muted in loop)
- * 2. Overlay text with the first instruction step
- * 3. Optional text-to-speech voice-over (Web Speech API)
+ * 2. Overlay text with the current instruction step
+ * 3. Text-to-speech voice-over (Web Speech API) with native French voice
  * 4. Expandable "all instructions" panel
- *
- * This is the realistic, understandable format the user asked for:
- * they see the movement AND get the explanation in parallel.
  */
 export function VideoWithInstructions({
   video,
@@ -38,6 +121,23 @@ export function VideoWithInstructions({
   const [showInstructions, setShowInstructions] = useState(false)
   const [voiceOn, setVoiceOn] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
+  const [voiceReady, setVoiceReady] = useState(false)
+
+  // Wait for voices to be loaded (Chrome loads them async)
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return
+    const checkVoices = () => {
+      const voices = window.speechSynthesis.getVoices()
+      if (voices.length > 0) {
+        setVoiceReady(true)
+      }
+    }
+    checkVoices()
+    window.speechSynthesis.onvoiceschanged = checkVoices
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null
+    }
+  }, [])
 
   // Auto-play when scrolled into view
   useEffect(() => {
@@ -61,7 +161,7 @@ export function VideoWithInstructions({
     return () => observer.disconnect()
   }, [])
 
-  // Text-to-speech for instructions — runs through all steps in sequence
+  // Text-to-speech — uses a native French voice when available
   useEffect(() => {
     if (!voiceOn) return
     if (!('speechSynthesis' in window)) {
@@ -70,13 +170,23 @@ export function VideoWithInstructions({
     }
     window.speechSynthesis.cancel()
 
-    const steps = exercise.instructions
-    const utter = new SpeechSynthesisUtterance(
-      `${exercise.name}. ${steps.join(' ')} Objectif : ${targetReps ?? 'à ton rythme'}.`,
-    )
+    const script = buildSpokenScript(exercise, targetReps)
+    const utter = new SpeechSynthesisUtterance(script)
     utter.lang = 'fr-FR'
-    utter.rate = 0.95
+    utter.rate = 0.92 // Slightly slower for clarity
+    utter.pitch = 1.0
+    utter.volume = 1.0
+
+    // Pick the best French voice
+    const frVoice = pickFrenchVoice()
+    if (frVoice) {
+      utter.voice = frVoice
+    }
+
+    // Track which step is currently being spoken (rough heuristic based on time)
     utter.onend = () => setVoiceOn(false)
+    utter.onerror = () => setVoiceOn(false)
+
     window.speechSynthesis.speak(utter)
 
     return () => {
@@ -84,12 +194,12 @@ export function VideoWithInstructions({
     }
   }, [voiceOn, exercise, targetReps])
 
-  // Cycle through instruction steps as overlay text (every 4s)
+  // Cycle through instruction steps as overlay text (every 5s)
   useEffect(() => {
     if (!isPlaying) return
     const interval = setInterval(() => {
       setCurrentStep((s) => (s + 1) % exercise.instructions.length)
-    }, 4500)
+    }, 5000)
     return () => clearInterval(interval)
   }, [isPlaying, exercise.instructions.length])
 
@@ -108,9 +218,17 @@ export function VideoWithInstructions({
   }
 
   function toggleVoice() {
-    setVoiceOn((v) => !v)
-    if (voiceOn && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
+    if (voiceOn) {
+      // Turning off — stop any in-progress speech
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+      setVoiceOn(false)
+    } else {
+      // Check availability first
+      if (!('speechSynthesis' in window) || !voiceReady) {
+        // Fallback: try anyway, browser will use default voice
+        setVoiceReady(true)
+      }
+      setVoiceOn(true)
     }
   }
 
