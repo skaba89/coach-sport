@@ -13,7 +13,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, type FavoriteRecord, type ProfileRecord } from '../db/db'
+import { db, getOwnerId, type FavoriteRecord, type ProfileRecord } from '../db/db'
 import type { WorkoutSession } from './types'
 import { getDataStore } from '../db/repository'
 import { loadStoredSession } from './auth/api'
@@ -32,8 +32,13 @@ export function useSessions(): UseSessionsResult {
   const { user } = useAuth()
   const isRemote = !!user
 
-  // Local mode: useLiveQuery
-  const localSessions = useLiveQuery(() => db.sessions.orderBy('startedAt').reverse().toArray(), [], undefined)
+  // Local mode: useLiveQuery — filter by ownerId (Lot 0.2 multi-compte isolation)
+  const ownerId = getOwnerId()
+  const localSessions = useLiveQuery(
+    () => db.sessions.where('ownerId').equals(ownerId).reverse().sortBy('startedAt'),
+    [ownerId],
+    undefined,
+  )
 
   // Remote mode: state-based
   const [remoteSessions, setRemoteSessions] = useState<WorkoutSession[]>([])
@@ -94,7 +99,7 @@ export function useProfile(): UseProfileResult {
   const { user } = useAuth()
   const isRemote = !!user
 
-  const localProfile = useLiveQuery(() => db.profile.get('me'), [], undefined)
+  const localProfile = useLiveQuery(() => db.profile.where('ownerId').equals(getOwnerId()).first(), [], undefined)
 
   const [remoteProfile, setRemoteProfile] = useState<ProfileRecord | undefined>(undefined)
   const [isLoading, setIsLoading] = useState(false)
@@ -151,9 +156,10 @@ export function useFavorites(type: FavoriteRecord['type']): UseFavoritesResult {
   const { user } = useAuth()
   const isRemote = !!user
 
+  const ownerId = getOwnerId()
   const localFavorites = useLiveQuery(
-    () => db.favorites.where('type').equals(type).toArray(),
-    [type],
+    () => db.favorites.where('ownerId').equals(ownerId).and((f) => f.type === type).toArray(),
+    [ownerId, type],
     undefined,
   )
 
@@ -216,9 +222,12 @@ export function useFavorite(type: FavoriteRecord['type'], refId: string | undefi
   const { user } = useAuth()
   const isRemote = !!user
 
+  const ownerId = getOwnerId()
   const localFavorite = useLiveQuery(
-    async () => (refId ? db.favorites.where({ type, refId }).first() : undefined),
-    [type, refId],
+    async () => (refId
+      ? db.favorites.where('ownerId').equals(ownerId).and((f) => f.type === type && f.refId === refId).first()
+      : undefined),
+    [ownerId, type, refId],
     undefined,
   )
 

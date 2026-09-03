@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Check, X } from 'lucide-react'
 import { useWorkoutStore } from '../stores/workoutStore'
 import { getExerciseById } from '../data/exercises'
-import { getProgramById } from '../data/programs'
 import { getDataStore } from '../lib/useDataStore'
 import { CountdownTimer } from '../components/CountdownTimer'
 import { VideoWithInstructions } from '../components/VideoWithInstructions'
@@ -38,8 +37,7 @@ export function Workout() {
   const [askingFeedback, setAskingFeedback] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const program = active?.programId ? getProgramById(active.programId) : undefined
-  const day = program?.days.find((d) => d.name === active?.dayName)
+  // Lot 0.4: program and day are no longer needed — slot data is in active.slots
 
   // FIX (audit §6.2): previous dep was `active` which is a new reference on
   // every `logSet`. Depending on `active?.logs` lets the memo cache hits
@@ -155,7 +153,9 @@ export function Workout() {
       <div className="flex flex-col gap-4">
         {exerciseIds.map((exerciseId) => {
           const exercise = getExerciseById(exerciseId)
-          const slot = day?.slots.find((s) => s.exerciseId === exerciseId)
+          // Lot 0.4 fix: read slot data from the persisted ActiveWorkout
+          // instead of looking up the program (which fails for generated workouts)
+          const activeSlot = active.slots?.find((s) => s.exerciseId === exerciseId)
           const setsForExercise = active.logs.filter((l) => l.exerciseId === exerciseId)
 
           return (
@@ -164,7 +164,7 @@ export function Workout() {
               exerciseId={exerciseId}
               exerciseName={exercise?.name ?? exerciseId}
               isChair={exercise?.equipment === 'chair'}
-              targetReps={slot?.reps}
+              targetReps={activeSlot?.targetReps}
             >
               {setsForExercise.map((log) => (
                 <SetRow
@@ -174,8 +174,9 @@ export function Workout() {
                   reps={log.reps}
                   onValidate={(reps) => {
                     logSet(exerciseId, log.setIndex, reps)
-                    if (slot?.restSeconds) {
-                      setResting({ exerciseId, seconds: slot.restSeconds })
+                    // Lot 0.4 fix: restSeconds now comes from the persisted slot
+                    if (activeSlot?.restSeconds) {
+                      setResting({ exerciseId, seconds: activeSlot.restSeconds })
                     }
                   }}
                 />

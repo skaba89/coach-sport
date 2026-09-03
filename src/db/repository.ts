@@ -16,7 +16,7 @@
  * 3. Lets us swap at runtime via a feature flag, so the existing local-only
  *    experience stays intact even after the SaaS API exists.
  */
-import { db, type FavoriteRecord, type ProfileRecord } from './db'
+import { db, getOwnerId, type FavoriteRecord, type ProfileRecord } from './db'
 import type { WorkoutSession } from '../lib/types'
 import { httpDataStore } from './httpRepository'
 import { loadStoredSession } from '../lib/auth/api'
@@ -54,14 +54,16 @@ export interface DataStore {
   favorites: FavoritesRepository
 }
 
-// ─── Dexie adapter (local-only, current behavior) ──────────────────
+// ─── Dexie adapter (local-only, with ownerId isolation — Lot 0.2) ──
 
 const dexieSessions: SessionsRepository = {
   async list() {
-    return db.sessions.orderBy('startedAt').reverse().toArray()
+    const ownerId = getOwnerId()
+    return db.sessions.where('ownerId').equals(ownerId).reverse().sortBy('startedAt')
   },
   async add(session) {
-    return db.sessions.add(session as WorkoutSession)
+    const ownerId = getOwnerId()
+    return db.sessions.add({ ...session, ownerId } as WorkoutSession & { ownerId: string })
   },
   async delete(id) {
     await db.sessions.delete(id)
@@ -70,22 +72,27 @@ const dexieSessions: SessionsRepository = {
 
 const dexieProfile: ProfileRepository = {
   async get() {
-    return db.profile.get('me')
+    const ownerId = getOwnerId()
+    return db.profile.where('ownerId').equals(ownerId).first()
   },
   async put(profile) {
-    await db.profile.put(profile)
+    const ownerId = getOwnerId()
+    await db.profile.put({ ...profile, ownerId })
   },
 }
 
 const dexieFavorites: FavoritesRepository = {
   async listByType(type) {
-    return db.favorites.where('type').equals(type).toArray()
+    const ownerId = getOwnerId()
+    return db.favorites.where('ownerId').equals(ownerId).and((f) => f.type === type).toArray()
   },
   async find(type, refId) {
-    return db.favorites.where({ type, refId }).first()
+    const ownerId = getOwnerId()
+    return db.favorites.where('ownerId').equals(ownerId).and((f) => f.type === type && f.refId === refId).first()
   },
   async add(record) {
-    await db.favorites.add(record as FavoriteRecord)
+    const ownerId = getOwnerId()
+    await db.favorites.add({ ...record, ownerId } as FavoriteRecord)
   },
   async delete(id) {
     await db.favorites.delete(id)

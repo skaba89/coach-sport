@@ -113,6 +113,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(async () => {
+    // Lot 0.2: wipe local data to prevent the next user from seeing
+    // the previous user's sessions, profile, and favorites.
+    const ownerId = session?.user?.id ? `user:${session.user.id}` : 'anonymous'
+    try {
+      const { wipeLocalData } = await import('../../db/db')
+      await wipeLocalData(ownerId)
+    } catch {
+      // IndexedDB may not be available (SSR) — ignore
+    }
     if (session) {
       await apiLogout()
     }
@@ -123,6 +132,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const deleteAccount = useCallback(async () => {
     if (!session) throw new Error('Not authenticated')
+    // Lot 0.2: wipe ALL local data before deleting the server account
+    const ownerId = `user:${session.user.id}`
+    try {
+      const { wipeLocalData } = await import('../../db/db')
+      await wipeLocalData(ownerId)
+    } catch {
+      // ignore
+    }
     await apiDeleteAccount(session.accessToken)
     storeSession(null)
     setSession(null)
