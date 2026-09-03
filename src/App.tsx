@@ -18,6 +18,7 @@ import { Challenges } from './pages/Challenges'
 import { Admin } from './pages/Admin'
 import { Pricing } from './pages/Pricing'
 import { Skills } from './pages/Skills'
+import { Privacy } from './pages/Privacy'
 import { LoginPage } from './pages/auth/LoginPage'
 import { RegisterPage } from './pages/auth/RegisterPage'
 import { ProfilePage } from './pages/auth/ProfilePage'
@@ -98,6 +99,7 @@ function App() {
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
               <Route path="/skills" element={<ProtectedRoute><Skills /></ProtectedRoute>} />
+              <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
               {/* Fallback */}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { LogOut, Trash2, AlertCircle, ChevronLeft, Mail, Calendar, Crown, Settings } from 'lucide-react'
+import { LogOut, Trash2, AlertCircle, ChevronLeft, Mail, Calendar, Crown, Settings, Shield } from 'lucide-react'
 import { useAuth } from '../../lib/auth/AuthContext'
 
 export function ProfilePage() {
@@ -109,6 +109,16 @@ export function ProfilePage() {
             <div className="flex items-center gap-2">
               <Settings size={18} className="text-slate-400" aria-hidden="true" />
               <span className="text-sm font-medium text-white">Back-office</span>
+            </div>
+            <ChevronLeft size={16} className="rotate-180 text-slate-500" aria-hidden="true" />
+          </Link>
+          <Link
+            to="/privacy"
+            className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/40 p-3 hover:bg-slate-800/70"
+          >
+            <div className="flex items-center gap-2">
+              <Shield size={18} className="text-slate-400" aria-hidden="true" />
+              <span className="text-sm font-medium text-white">Confidentialité & RGPD</span>
             </div>
             <ChevronLeft size={16} className="rotate-180 text-slate-500" aria-hidden="true" />
           </Link>
