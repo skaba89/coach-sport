@@ -22,7 +22,8 @@ import type { IncomingMessage, ServerResponse } from 'http'
 import { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken, accessTokenTtlSeconds } from './jwt'
 import { usersAdapter } from './adapters'
 import { getClientIp, rateLimit } from './rateLimit'
-import type { ApiError, AuthSession, LoginRequest, RegisterRequest } from '../src/lib/auth/types'
+import { LoginSchema, RefreshSchema, RegisterSchema } from './schemas'
+import type { ApiError, AuthSession } from '../src/lib/auth/types'
 
 const JSON_HEADER = { 'Content-Type': 'application/json' }
 
@@ -85,15 +86,20 @@ async function handleAuth(req: IncomingMessage, res: ServerResponse, url: string
   try {
     // ─── POST /api/auth/register ────────────────────────────────
     if (url === '/api/auth/register' && method === 'POST') {
-      // Rate limit: 5 registrations per IP per minute
       const rl = rateLimit({ key: `register:${getClientIp(req)}`, bucketSize: 5, refillPerMinute: 5 })
       if (!rl.allowed) {
         res.setHeader('Retry-After', String(rl.retryAfter))
         sendError(res, 429, `Too many registrations. Retry in ${rl.retryAfter}s.`)
         return true
       }
-      const body = JSON.parse(await readBody(req)) as RegisterRequest
-      const user = await usersAdapter.create(body.email, body.password)
+      // Lot 0.7: Zod validation instead of unsafe cast
+      const raw = JSON.parse(await readBody(req))
+      const parsed = RegisterSchema.safeParse(raw)
+      if (!parsed.success) {
+        sendError(res, 400, parsed.error.issues[0]?.message ?? 'Invalid input')
+        return true
+      }
+      const user = await usersAdapter.create(parsed.data.email, parsed.data.password)
       const session = await buildSession(user.id, user.email)
       session.user = user
       send(res, 201, session)
@@ -102,15 +108,20 @@ async function handleAuth(req: IncomingMessage, res: ServerResponse, url: string
 
     // ─── POST /api/auth/login ───────────────────────────────────
     if (url === '/api/auth/login' && method === 'POST') {
-      // Rate limit: 10 login attempts per IP per minute (slow brute force)
       const rl = rateLimit({ key: `login:${getClientIp(req)}`, bucketSize: 10, refillPerMinute: 10 })
       if (!rl.allowed) {
         res.setHeader('Retry-After', String(rl.retryAfter))
         sendError(res, 429, `Too many login attempts. Retry in ${rl.retryAfter}s.`)
         return true
       }
-      const body = JSON.parse(await readBody(req)) as LoginRequest
-      const user = await usersAdapter.verify(body.email, body.password)
+      // Lot 0.7: Zod validation
+      const raw = JSON.parse(await readBody(req))
+      const parsed = LoginSchema.safeParse(raw)
+      if (!parsed.success) {
+        sendError(res, 400, parsed.error.issues[0]?.message ?? 'Invalid input')
+        return true
+      }
+      const user = await usersAdapter.verify(parsed.data.email, parsed.data.password)
       const session = await buildSession(user.id, user.email)
       session.user = user
       send(res, 200, session)
@@ -119,12 +130,14 @@ async function handleAuth(req: IncomingMessage, res: ServerResponse, url: string
 
     // ─── POST /api/auth/refresh ──────────────────────────────────
     if (url === '/api/auth/refresh' && method === 'POST') {
-      const body = JSON.parse(await readBody(req) || '{}') as { refreshToken?: string }
-      if (!body.refreshToken) {
-        sendError(res, 400, 'Missing refreshToken')
+      // Lot 0.7: Zod validation
+      const raw = JSON.parse(await readBody(req) || '{}')
+      const parsed = RefreshSchema.safeParse(raw)
+      if (!parsed.success) {
+        sendError(res, 400, parsed.error.issues[0]?.message ?? 'Invalid input')
         return true
       }
-      const payload = await verifyRefreshToken(body.refreshToken)
+      const payload = await verifyRefreshToken(parsed.data.refreshToken)
       const user = await usersAdapter.getById(payload.sub)
       if (!user) {
         sendError(res, 401, 'User no longer exists')

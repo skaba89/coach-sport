@@ -28,6 +28,7 @@
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2",
     "stripe": "^22.6.0",
+    "zod": "^4.5.4",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
