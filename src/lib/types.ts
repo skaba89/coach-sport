@@ -34,11 +34,103 @@ export interface Exercise {
   highImpact?: boolean
 }
 
+// ─── Lot 0.6: ExerciseTarget — typed prescription model ──────────
+
+/**
+ * Replaces the loose `reps: string` with a discriminated union.
+ * Backward-compatible: `reps` string is still accepted and parsed
+ * via parseTarget() / targetToString().
+ */
+export type MetricType = 'reps' | 'duration' | 'amrap'
+
+export interface ExerciseTarget {
+  metricType: MetricType
+  /** For 'reps': minimum reps in the range (e.g. 8 for "8-12") */
+  targetMin?: number
+  /** For 'reps': maximum reps in the range (e.g. 12 for "8-12") */
+  targetMax?: number
+  /** For 'duration': target seconds (e.g. 30 for "30s") */
+  targetSeconds?: number
+  /** If true, target is per-side (e.g. "8-12 / bras") */
+  perSide?: boolean
+  /** Tempo suggestion (e.g. "3-1-2-0" for 3s eccentric, 1s pause, 2s concentric) */
+  tempo?: string
+  /** Reps in Reserve target (how many more reps you feel you could do) */
+  rirTarget?: number
+}
+
+/** Parse a legacy reps string into a typed ExerciseTarget. */
+export function parseTarget(reps: string): ExerciseTarget {
+  const trimmed = reps.trim()
+
+  // AMRAP
+  if (trimmed.toUpperCase() === 'AMRAP' || trimmed.toUpperCase() === 'MAX') {
+    return { metricType: 'amrap' }
+  }
+
+  // Time-based: "20-30s", "45s", "30 s"
+  const timeMatch = trimmed.match(/(\d+)(?:\s*[-–]\s*(\d+))?\s*s/i)
+  if (timeMatch) {
+    return {
+      metricType: 'duration',
+      targetSeconds: timeMatch[2]
+        ? Math.round((Number(timeMatch[1]) + Number(timeMatch[2])) / 2)
+        : Number(timeMatch[1]),
+    }
+  }
+
+  // Reps with range: "8-12", "8 - 12", "3-6 / bras"
+  const rangeMatch = trimmed.match(/(\d+)\s*[-–]\s*(\d+)(?:\s*\/\s*(\w+))?/)
+  if (rangeMatch) {
+    return {
+      metricType: 'reps',
+      targetMin: Number(rangeMatch[1]),
+      targetMax: Number(rangeMatch[2]),
+      perSide: !!rangeMatch[3],
+    }
+  }
+
+  // Single rep count: "10"
+  const singleMatch = trimmed.match(/^(\d+)$/)
+  if (singleMatch) {
+    return {
+      metricType: 'reps',
+      targetMin: Number(singleMatch[1]),
+      targetMax: Number(singleMatch[1]),
+    }
+  }
+
+  // Fallback: treat as AMRAP
+  return { metricType: 'amrap' }
+}
+
+/** Serialize an ExerciseTarget back to a display string. */
+export function targetToString(target: ExerciseTarget): string {
+  switch (target.metricType) {
+    case 'reps':
+      if (target.targetMin === target.targetMax) {
+        return `${target.targetMin}${target.perSide ? ' / côté' : ''}`
+      }
+      return `${target.targetMin}-${target.targetMax}${target.perSide ? ' / côté' : ''}`
+    case 'duration':
+      return `${target.targetSeconds}s`
+    case 'amrap':
+      return 'AMRAP'
+    default:
+      return ''
+  }
+}
+
+// ─── Program types (backward-compatible with reps: string) ────────
+
 export interface ProgramExerciseSlot {
   exerciseId: string
   sets: number
-  reps: string // e.g. "8-12" or "AMRAP" or "30s"
+  /** Legacy string format: "8-12", "30s", "AMRAP". Use parseTarget() for typed access. */
+  reps: string
   restSeconds: number
+  /** Lot 0.6: typed target (optional, derived from reps if not set) */
+  target?: ExerciseTarget
 }
 
 export interface ProgramDay {
