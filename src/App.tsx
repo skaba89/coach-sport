@@ -61,27 +61,37 @@ function App() {
   return (
     <HashRouter>
       <AuthProvider>
+        {/* Skip-link for keyboard navigation (WCAG 2.4.1) */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-emerald-500 focus:px-4 focus:py-2 focus:text-slate-900"
+        >
+          Aller au contenu principal
+        </a>
+
         <ErrorBoundary>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<RedirectIfAuthed><LoginPage /></RedirectIfAuthed>} />
-            <Route path="/register" element={<RegisterPage />} />
+          <div id="main-content">
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login" element={<RedirectIfAuthed><LoginPage /></RedirectIfAuthed>} />
+              <Route path="/register" element={<RegisterPage />} />
 
-            {/* Protected routes */}
-            <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-            <Route path="/programs" element={<ProtectedRoute><Programs /></ProtectedRoute>} />
-            <Route path="/programs/:programId" element={<ProtectedRoute><ProgramDetail /></ProtectedRoute>} />
-            <Route path="/exercises" element={<ProtectedRoute><Exercises /></ProtectedRoute>} />
-            <Route path="/exercises/:exerciseId" element={<ProtectedRoute><ExerciseDetail /></ProtectedRoute>} />
-            <Route path="/workout" element={<ProtectedRoute><Workout /></ProtectedRoute>} />
-            <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-            <Route path="/timer" element={<ProtectedRoute><TimerPage /></ProtectedRoute>} />
-            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+              {/* Protected routes */}
+              <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/programs" element={<ProtectedRoute><Programs /></ProtectedRoute>} />
+              <Route path="/programs/:programId" element={<ProtectedRoute><ProgramDetail /></ProtectedRoute>} />
+              <Route path="/exercises" element={<ProtectedRoute><Exercises /></ProtectedRoute>} />
+              <Route path="/exercises/:exerciseId" element={<ProtectedRoute><ExerciseDetail /></ProtectedRoute>} />
+              <Route path="/workout" element={<ProtectedRoute><Workout /></ProtectedRoute>} />
+              <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+              <Route path="/timer" element={<ProtectedRoute><TimerPage /></ProtectedRoute>} />
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
         </ErrorBoundary>
         <NavBarManager />
       </AuthProvider>
