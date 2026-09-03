@@ -1,4 +1,5 @@
 import type { Program } from '../lib/types'
+import { premiumPrograms } from './premiumPrograms'
 
 // Les programmes "généraux" (débutant, intermédiaire, avancé) n'utilisent
 // que des exercices sans équipement. Le programme "Chaise" est le seul à
@@ -132,4 +133,5 @@ export const programs: Program[] = [
 
 export function getProgramById(id: string): Program | undefined {
   return programs.find((p) => p.id === id)
+    ?? premiumPrograms.find((p) => p.id === id)
 }

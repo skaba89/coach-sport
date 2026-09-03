@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom'
 import { Clock } from 'lucide-react'
 import { programs } from '../data/programs'
+import { premiumPrograms } from '../data/premiumPrograms'
 import type { Difficulty } from '../lib/types'
 import { estimateProgramAverageMinutes } from '../lib/duration'
 import { equipmentBadge, programEquipment } from '../lib/equipment'
 import { difficultyLabel } from '../lib/labels'
+
+const allPrograms = [...programs, ...premiumPrograms]
 
 const difficultyColor: Record<Difficulty, string> = {
   debutant: 'bg-emerald-500/15 text-emerald-400',
@@ -18,7 +21,7 @@ export function Programs() {
     <div className="mx-auto max-w-lg px-4 pb-24 pt-6">
       <h1 className="mb-6 text-2xl font-bold text-white">Programmes</h1>
       <div className="flex flex-col gap-3">
-        {programs.map((program) => (
+        {allPrograms.map((program) => (
           <Link
             key={program.id}
             to={`/programs/${program.id}`}
