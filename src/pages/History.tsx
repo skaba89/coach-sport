@@ -1,11 +1,15 @@
-import { Trash2 } from 'lucide-react'
+import { Trash2, Target } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { getExerciseById } from '../data/exercises'
 import { volumeOverTime, weeklyStats } from '../lib/stats'
 import { VolumeChart } from '../components/VolumeChart'
+import { TrainingCalendar } from '../components/TrainingCalendar'
+import { MuscleMap, computeMuscleStats } from '../lib/muscleMap'
 import type { Rpe } from '../lib/types'
 import { rpeLabel } from '../lib/labels'
 import { withToast } from '../lib/toast'
 import { getDataStore, useSessions, useProfile } from '../lib/useDataStore'
+import { useMemo } from 'react'
 
 const rpeEmoji: Record<Rpe, string> = {
   'tres-facile': '😴',
@@ -20,6 +24,7 @@ export function History() {
   const { profile } = useProfile()
   const volumeData = volumeOverTime(sessions, 14)
   const week = weeklyStats(sessions, profile?.frequency)
+  const muscleStats = useMemo(() => computeMuscleStats(sessions), [sessions])
 
   async function deleteSession(id: number | undefined) {
     if (id === undefined) return
@@ -61,6 +66,29 @@ export function History() {
         <p className="mb-3 text-sm font-medium text-slate-300">Volume (répétitions) — 14 derniers jours</p>
         <VolumeChart data={volumeData} />
       </div>
+
+      {/* Muscle Map */}
+      <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-800/40 p-4">
+        <p className="mb-3 text-sm font-medium text-slate-300">Carte musculaire</p>
+        <MuscleMap stats={muscleStats} />
+      </div>
+
+      {/* Training Calendar */}
+      <div className="mb-6">
+        <TrainingCalendar sessions={sessions} />
+      </div>
+
+      {/* Skills link */}
+      <Link
+        to="/skills"
+        className="mb-6 flex items-center justify-between rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 hover:bg-emerald-500/10"
+      >
+        <div className="flex items-center gap-2">
+          <Target size={20} className="text-emerald-400" aria-hidden="true" />
+          <span className="font-medium text-white">Compétences</span>
+        </div>
+        <span className="text-xs text-slate-400">Voir tes objectifs →</span>
+      </Link>
 
       <h2 className="mb-3 font-semibold text-white">Historique des séances</h2>
       {sessions.length === 0 && (
