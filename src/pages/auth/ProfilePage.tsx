@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { LogOut, Trash2, AlertCircle, ChevronLeft, Mail, Calendar } from 'lucide-react'
+import { LogOut, Trash2, AlertCircle, ChevronLeft, Mail, Calendar, Crown, Settings } from 'lucide-react'
 import { useAuth } from '../../lib/auth/AuthContext'
 
 export function ProfilePage() {
@@ -90,6 +90,30 @@ export function ProfilePage() {
       </div>
 
       <div className="space-y-3">
+        {/* Premium + Admin links */}
+        <div className="space-y-2">
+          <Link
+            to="/pricing"
+            className="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 hover:bg-emerald-500/10"
+          >
+            <div className="flex items-center gap-2">
+              <Crown size={18} className="text-emerald-400" aria-hidden="true" />
+              <span className="text-sm font-medium text-white">Passer Premium</span>
+            </div>
+            <ChevronLeft size={16} className="rotate-180 text-slate-500" aria-hidden="true" />
+          </Link>
+          <Link
+            to="/admin"
+            className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/40 p-3 hover:bg-slate-800/70"
+          >
+            <div className="flex items-center gap-2">
+              <Settings size={18} className="text-slate-400" aria-hidden="true" />
+              <span className="text-sm font-medium text-white">Back-office</span>
+            </div>
+            <ChevronLeft size={16} className="rotate-180 text-slate-500" aria-hidden="true" />
+          </Link>
+        </div>
+
         <button
           onClick={handleLogout}
           disabled={busy}

@@ -15,6 +15,8 @@ import { TimerPage } from './pages/TimerPage'
 import { Onboarding } from './pages/Onboarding'
 import { CoachChat } from './pages/CoachChat'
 import { Challenges } from './pages/Challenges'
+import { Admin } from './pages/Admin'
+import { Pricing } from './pages/Pricing'
 import { LoginPage } from './pages/auth/LoginPage'
 import { RegisterPage } from './pages/auth/RegisterPage'
 import { ProfilePage } from './pages/auth/ProfilePage'
@@ -92,6 +94,8 @@ function App() {
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/coach" element={<ProtectedRoute><CoachChat /></ProtectedRoute>} />
               <Route path="/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+              <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
               {/* Fallback */}
