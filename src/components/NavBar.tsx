@@ -1,11 +1,19 @@
 import { NavLink } from 'react-router-dom'
-import { Dumbbell, ListChecks, LineChart, Home, User } from 'lucide-react'
+import { Calendar, Compass, TrendingUp, User } from 'lucide-react'
 
+/**
+ * Bottom navigation — Coach UX refonte.
+ *
+ * 4 tabs instead of 5:
+ * - Aujourd'hui (Home): plan du jour, séance recommandée, streak, badges
+ * - Explorer: programmes + exercices + quick workouts
+ * - Progression: historique, stats, records personnels
+ * - Profil: compte, paramètres, langue
+ */
 const links = [
-  { to: '/', label: 'Accueil', icon: Home },
-  { to: '/programs', label: 'Programmes', icon: Dumbbell },
-  { to: '/exercises', label: 'Exercices', icon: ListChecks },
-  { to: '/history', label: 'Progression', icon: LineChart },
+  { to: '/', label: "Aujourd'hui", icon: Calendar },
+  { to: '/explore', label: 'Explorer', icon: Compass },
+  { to: '/history', label: 'Progression', icon: TrendingUp },
   { to: '/profile', label: 'Profil', icon: User },
 ]
 
@@ -23,6 +31,7 @@ export function NavBar() {
                   isActive ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-300'
                 }`
               }
+              aria-label={label}
             >
               <Icon size={20} strokeWidth={2.2} />
               {label}

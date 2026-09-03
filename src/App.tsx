@@ -4,6 +4,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { AuthProvider, useAuth } from './lib/auth/AuthContext'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { Home } from './pages/Home'
+import { Explore } from './pages/Explore'
 import { Programs } from './pages/Programs'
 import { ProgramDetail } from './pages/ProgramDetail'
 import { Exercises } from './pages/Exercises'
@@ -78,6 +79,7 @@ function App() {
 
               {/* Protected routes */}
               <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
               <Route path="/programs" element={<ProtectedRoute><Programs /></ProtectedRoute>} />
               <Route path="/programs/:programId" element={<ProtectedRoute><ProgramDetail /></ProtectedRoute>} />
               <Route path="/exercises" element={<ProtectedRoute><Exercises /></ProtectedRoute>} />
