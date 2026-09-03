@@ -13,6 +13,8 @@ import { Workout } from './pages/Workout'
 import { History } from './pages/History'
 import { TimerPage } from './pages/TimerPage'
 import { Onboarding } from './pages/Onboarding'
+import { CoachChat } from './pages/CoachChat'
+import { Challenges } from './pages/Challenges'
 import { LoginPage } from './pages/auth/LoginPage'
 import { RegisterPage } from './pages/auth/RegisterPage'
 import { ProfilePage } from './pages/auth/ProfilePage'
@@ -88,6 +90,8 @@ function App() {
               <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
               <Route path="/timer" element={<ProtectedRoute><TimerPage /></ProtectedRoute>} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+              <Route path="/coach" element={<ProtectedRoute><CoachChat /></ProtectedRoute>} />
+              <Route path="/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
               {/* Fallback */}

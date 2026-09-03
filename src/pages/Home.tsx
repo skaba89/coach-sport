@@ -237,9 +237,29 @@ export function Home() {
         </div>
       </section>
 
+      {/* Coach AI + Challenges */}
+      <div className="mt-6 grid grid-cols-2 gap-3">
+        <Link
+          to="/coach"
+          className="flex flex-col items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-center hover:bg-emerald-500/15"
+        >
+          <Sparkles size={24} className="text-emerald-400" aria-hidden="true" />
+          <span className="text-sm font-medium text-white">Coach IA</span>
+          <span className="text-xs text-slate-400">Parle à ton coach</span>
+        </Link>
+        <Link
+          to="/challenges"
+          className="flex flex-col items-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center hover:bg-amber-500/15"
+        >
+          <Trophy size={24} className="text-amber-400" aria-hidden="true" />
+          <span className="text-sm font-medium text-white">Challenges</span>
+          <span className="text-xs text-slate-400">Relève un défi</span>
+        </Link>
+      </div>
+
       <Link
         to="/timer"
-        className="mt-6 flex items-center justify-between rounded-2xl bg-emerald-500 p-4 font-semibold text-slate-900 hover:bg-emerald-400"
+        className="mt-3 flex items-center justify-between rounded-2xl bg-slate-800 p-4 font-semibold text-slate-300 hover:bg-slate-700"
       >
         Lancer un minuteur libre
         <ArrowRight size={18} />
